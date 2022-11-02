@@ -1,18 +1,34 @@
 subName="sub.xsd"
+#min(0<num<1, None) max(0<num<1, None) axis("x", "y", "z") cond("and", "or")
+exCon=[0.9, 0.7, "z", "and"]
 
-#min(num, None) max(num, None) axis("x", "y", "z") cond("and", "or")
-exCon=[1, 2, "z", "and"]
-
-dirAxis=["x","y","z"]
-if exCon[2] in dirAxis:
-    exCon[2] = dirAxis.index(exCon[2])
-else:
+if exCon[2] not in ["x","y","z"]:
     raise Exception("Invalid axis name (optional: \"x\", \"y\", \"z\")", exCon[2])
+
+axisNum=str(["x","y","z"].index(exCon[2]))
+if exCon.count(None) == 0:
+    ifcon = "struc[-1]." + exCon[2] + " < " + str(exCon[0]) + "*struc.cell.cellpar()[" + axisNum + "]" \
+            + " " + exCon[3] + " " +                                                                   \
+            "struc[-1]." + exCon[2] + " > " + str(exCon[1]) + "*struc.cell.cellpar()[" + axisNum + "]"
+elif exCon.count(None) == 1:
+    if exCon[1]  == None:
+        ifcon = "struc[-1]." + exCon[2] + " < " + str(exCon[0]) + "*struc.cell.cellpar()[" + axisNum + "]"
+    else:
+        ifcon = "struc[-1]." + exCon[2] + " > " + str(exCon[1]) + "*struc.cell.cellpar()[" + axisNum + "]"
+else:
+    ifcon = "False"
 
 import random
 import numpy as np
 from ase.io import read, write
 from ase.data import atomic_numbers, atomic_names, covalent_radii
+import time,sys
+
+
+def printOut(po):
+    with open("run_"+time.strftime("%Y%m%d%H%M%S")+"_log.txt", "a+") as fw:
+        print(po, file=fw)
+    #print(po)
 
 
 def getMinBondLeg(na1, na2, rTh=1.0):
@@ -32,9 +48,22 @@ def getInfo(struc, wrap=False):
     fa_min = "z" if fa[0] > fa[2] and fa[1] > fa[2] else fa_min
     return( " cell: %s\n  x: %s\n  y: %s\n  z: %s\n" %(cell, x, y, z) )
 
+import matplotlib.pyplot as plt
+from ase.visualize.plot import plot_atoms
+fig,ax = plt.subplots(1,3,dpi=300,figsize=(10, 7.65))
+
+
+fig.text(0.1,0.5,"sub + water -> aimStr",fontsize=12, verticalalignment="center", horizontalalignment="center")
+fig.tight_layout()
+for i in range(3):
+  ax[i].axis("off")
+
 
 struc = read(subName)
 print("read struc:\n", getInfo(struc,wrap=True))
+
+plot_atoms(struc,ax[0],radii=0.5,rotation=("-90x,0y,0z"))
+
 
 struc_tmp = struc[:0]
 from ase import Atom
@@ -55,6 +84,8 @@ waters = read("iniWater.traj", index=":")
 water  = random.choice(waters)
 print("water:\n", getInfo(water))
 
+plot_atoms(water,ax[1],radii=0.3,rotation=("0x,0y,0z"))
+
 superLa = [ int(i/water.cell.cellpar()[n])+1 for n,i in enumerate([th_x, th_y, th_z]) ]
 print("supercell of water bulk:", superLa, "\n\n")
 water = water * superLa
@@ -74,29 +105,52 @@ atom_O_index = [ [i.index] for i in water if i.symbol == "O" and
 
 print("Number of filtered oxygens:", len(atom_O_index) )
 
+
+print("Collecting water...")
+O_num = len(atom_O_index[:])
 for index in range(len(atom_O_index)):
+    rp = index/O_num
+    print("\r"+f"{rp*100:.0f}%: [ ","#"*int(rp*50)," "*(50-int(rp*50)) ,sep="", end="]")
+    sys.stdout.flush()
     allDis = water.get_distances(atom_O_index[index][0], range(len(water)), mic=True, vector=False)
     allDis_dic = dict(zip([i for i in range(len(allDis))], allDis))
     atom_O_index[index].append(sorted(allDis_dic.items(),key=lambda x:x[1])[1:3])
+print()
 
 
+randomOffset = [random.random()*struc.cell.cellpar()[i] for i in  range(3)]
+print("water offset:", randomOffset, "\n\n")
+
+print("prohibited area:", ifcon.replace("struc[-1].","").replace("False","None").replace("struc.cell.cellpar()","cell"), "\n\n")
+
+
+
+print("Adding water...")
 addList=[]
-for index in range(len(atom_O_index[:])):
+O_num = len(atom_O_index[:])
+for index in range(O_num):
+    rp = index/O_num
+    print("\r"+f"{rp*100:.0f}%: [ ","#"*int(rp*50)," "*(50-int(rp*50)) ,sep="", end="]")
+    sys.stdout.flush()
     struc_ori = struc.copy()
     h2o_index = atom_O_index[index]
     h2o = [water[h2o_index[0]],
            water[h2o_index[1][0][0]],
            water[h2o_index[1][1][0]]]
+    for i in h2o:
+        i.position += randomOffset
     break_flag = False
     for ni,i in enumerate(h2o):
         struc.append(i)
         struc.wrap()
-        # jian ce jing zhi
+        if eval(ifcon):
+            printOut(f"s{index}  exceeding the threshold: {struc[-1]}")
+            break_flag = True
+            break
         for j in struc[:-(1+ni)]:
             dl=struc.get_distance(-1, j.index, mic=True, vector=False)
-            #print("   ",dl,end=" ")
             if dl < bondTh[struc[-1].symbol+"-"+j.symbol]:
-                #print(f"too close", i, j, dl, bondTh[struc[-1].symbol+"-"+j.symbol])
+                printOut(f"s{index}  too close: {i} {j} {dl}")
                 break_flag = True
                 break
         if break_flag:
@@ -104,11 +158,12 @@ for index in range(len(atom_O_index[:])):
     if break_flag:
         struc = struc_ori
     else:
-        #print(f"add water:", h2o)
+        printOut(f"s{index}  add water: {h2o}")
         addList.append(h2o)
-    #print(len(struc))
+print()
 
 print("Number of added water:", len(addList))
+plot_atoms(struc,ax[2],radii=0.3,rotation=("-90x,0y,0z"))
 
 write("add_water_"+subName, struc)
-
+fig.savefig("add_water_"+subName+".png")
