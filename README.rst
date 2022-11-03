@@ -2,24 +2,22 @@
 addWaterLayer (beta)
 ===========================
 
-
-简单的 python 脚本用来添加显示水溶剂模型.
-
  .. image:: ./example/fig.png
   :width: 300px
-
+  
+一个 python 脚本用来添加显式水溶剂模型.
 
 作者
 ===============
 
-向盼
-panxiang126@gmail.com
+向盼 (panxiang126@gmail.com)
 
 
 依赖
 ====================
 
 数据处理: ase, numpy
+
 画图: matplotlib
 
 使用方式
