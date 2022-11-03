@@ -5,6 +5,10 @@ addWaterLayer (beta)
 
 简单的 python 脚本用来添加显示水溶剂模型.
 
+ .. image:: ./example/fig.png
+  :width: 300px
+
+
 作者
 ===============
 
