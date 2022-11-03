@@ -29,6 +29,6 @@ addWaterLayer (beta)
 
 2. 在线
 --------------------
-在线使用教程: `Binder <https://github.com/panxiang126/addWaterLayer/tree/main/Binder>`_
+如果实在不想配置本地环境, 请参考在线使用教程: `Binder <https://github.com/panxiang126/addWaterLayer/tree/main/Binder>`_
 
 
