@@ -1,5 +1,5 @@
 ===========================
-addWaterLayer (beta)
+addExplicitWater (beta)
 ===========================
 
  .. image:: ./example/fig.png
@@ -25,10 +25,10 @@ addWaterLayer (beta)
 
 1. 本地运行
 --------------------
-安装上述依赖, 下载 addWaterLayer.py 和 iniWater.traj 文件, 以 ``python addWaterLayer.py`` 的方式运行
+安装上述依赖, 下载 addExplicitWater.py 和 iniWater.traj 文件, 以 ``python addExplicitWater.py`` 的方式运行
 
 2. 在线
 --------------------
-如果实在不想配置本地环境, 请参考在线使用教程: `Binder <https://github.com/panxiang126/addWaterLayer/tree/main/Binder>`_
+如果实在不想配置本地环境, 请参考在线使用教程: `Binder <https://github.com/panxiang126/addExplicitWater/tree/main/Binder>`_
 
 
